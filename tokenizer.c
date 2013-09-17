@@ -10,11 +10,13 @@
 
 struct TokenizerT_ {
 
+/* sep stores separators, tokStr stores the String to be tokenized. */
+
+
 	char* sep;
 	char* tokStr;
 	int curr;
-	int tail;
-	int tokCount;
+
 };
 
 typedef struct TokenizerT_ TokenizerT;
@@ -43,9 +45,6 @@ TokenizerT *TKCreate(char *separators, char *ts) {
 	token->sep = separators;
 	token->tokStr = ts;
 	token->curr = 0;
-	token->tokCount = 0;	
-	token->tail = 0;
-	token->backUp = ts;
 	
 	return token;
 }
@@ -58,6 +57,8 @@ TokenizerT *TKCreate(char *separators, char *ts) {
  */
 
 void TKDestroy(TokenizerT *tk) {
+
+	free(tk);
 }
 
 /*
@@ -84,20 +85,33 @@ char *TKGetNextToken(TokenizerT *tk) {
 	char* tempStr = tk->tokStr;
 	int j = 0;
 	char* backUp = malloc(strlen(tk->tokStr)*sizeof(char));
+
+/* While the original input is not altered, backUp is created from tokStr to manipulate for tokenizing */
+
 	memcpy(backUp, tk->tokStr, strlen(tk->tokStr) + 1);
 	backUp[strlen(tk->tokStr)] = '\0';
  	
+/* Two loops: each character in tokStr is compared against a separator, and each possible case is accounted for */
 
 	while (tk->tokStr[n] != '\0') {
 		i = 0;
 		while (tk->sep[i] != '\0') {
+
+/* If there is a match between delimiter and character */
+
 			if (tk->sep[i] == tempStr[n]) {
+
+/* If first character checked is a delimiter */
+
 				if (n - m == 0) {
 					tempStr++;
 					tk->tokStr = tempStr;
 					return 0;
 				}
 				else {
+
+/* If character isn't the first checked, but matches a delimiter. nextToken stores the token, and then backUp is incremented
+ * to remove the string that was already tokenized */
 				 
 					nextToken = malloc((n-m+1)*sizeof(char));
 					while (m + j < n) {
@@ -112,7 +126,7 @@ char *TKGetNextToken(TokenizerT *tk) {
 					
 						
 					while (j > 0) {
-						*backUp++;
+						backUp++;
 						j--;
 
 					}
@@ -131,6 +145,10 @@ char *TKGetNextToken(TokenizerT *tk) {
 	n++; 
 		
 	}		
+
+/* Taking the last token as a case */
+
+
 			if (strlen(tk->tokStr) > 0) {
 				
 				nextToken = malloc(strlen(tk->tokStr) + 1);
@@ -179,13 +197,16 @@ int main(int argc, char **argv) {
 	input = argv[2];
 
 	*tokenizer = *TKCreate(delim, input);
-	
+
+/* iteration for tokens occurs here */
 	while (strlen(tokenizer->tokStr) != 0) {	
 		nextToken = TKGetNextToken(tokenizer);
 
 		if (nextToken != 0) {
 			printf("%s\n", nextToken);
 		}
-	};
+	}
+
+	TKDestroy(tokenizer);
   return 0;
 }
