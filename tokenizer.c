@@ -45,6 +45,7 @@ TokenizerT *TKCreate(char *separators, char *ts) {
 	token->curr = 0;
 	token->tokCount = 0;	
 	token->tail = 0;
+	token->backUp = ts;
 	
 	return token;
 }
@@ -73,47 +74,80 @@ void TKDestroy(TokenizerT *tk) {
 
 char *TKGetNextToken(TokenizerT *tk) {
 
-/* the tokenizer object has the indices, which get updated at the end of this sub_
- * routine
- */
+
+/* Where the magic happens. */
+
+	int n = 0; 
+	int m = 0; 
 	int i = 0;
-	int n = tk->curr;
-	int m = tk->tail;
+	char* nextToken;
+	char* tempStr = tk->tokStr;
+	int j = 0;
+	char* backUp = malloc(strlen(tk->tokStr)*sizeof(char));
+	memcpy(backUp, tk->tokStr, strlen(tk->tokStr) + 1);
+	backUp[strlen(tk->tokStr)] = '\0';
+ 	
 
-	while (tk->sep[i] != '\0') {
-
-		while (tk->tokStr[n] != '\0') {
-			printf("HERE\n");
-			if (tk->sep[i] == tk->tokStr[n]) {
-
-/* if the first character checked matches a delimiter, no token can be made*/
-
+	while (tk->tokStr[n] != '\0') {
+		i = 0;
+		while (tk->sep[i] != '\0') {
+			if (tk->sep[i] == tempStr[n]) {
 				if (n - m == 0) {
-					tk->curr += 1;
-					tk->tail += 1;
-					n++;
-					m++;
-				continue;
-				} 
-					else {
-/* Else if n - m != 0 (Token is created here) */					
-				
+					tempStr++;
+					tk->tokStr = tempStr;
+					return 0;
 				}
-			}
 				else {
-/* Else if the tk->sep[i] != tk->tokStr[n] (variables n is incremented here) */
-				}
+				 
+					nextToken = malloc((n-m+1)*sizeof(char));
+					while (m + j < n) {
 					
+						nextToken[j] = tempStr[m + j];
+					
+						j++;
+					}
+					tempStr[n - m] = '\0';
+				
+					j = n - m;
+					
+						
+					while (j > 0) {
+						*backUp++;
+						j--;
 
-		n++;	
+					}
+					
+				
+					tk->tokStr = malloc(strlen(backUp)*sizeof(char));
+					
+					memcpy(tk->tokStr, backUp, strlen(backUp)*sizeof(char));
+					backUp = tk->tokStr;	
+						
+					return nextToken;
+				}
+			} 
+		i++;
 		}
-	i++;
-	printf("NOT NULL\n");
-	}
-
-  return NULL;
+	n++; 
+		
+	}		
+			if (strlen(tk->tokStr) > 0) {
+				
+				nextToken = malloc(strlen(tk->tokStr) + 1);
+				while (j < strlen(tk->tokStr)) {
+				nextToken[j] = tk->tokStr[j];
+				j++;
+				}
+				nextToken[strlen(tk->tokStr)] = '\0';
+				tk->tokStr = "";
+				return nextToken;
+			}
+		
+		
+		
+	
+	return 0;
 }
-
 /*
  * main will have two string arguments (in argv[1] and argv[2]).
  * The first string contains the separator characters.
@@ -128,8 +162,9 @@ int main(int argc, char **argv) {
 	char* nextToken;
 	char* delim;
 	char* input;
+	
 	TokenizerT* tokenizer =  malloc(sizeof(TokenizerT)) ;
-
+	
 	if (argc != 3) {
 		fprintf(stderr, "ERROR: INVALID NUMBER OF INPUTS\n");
 		exit(EXIT_FAILURE);
@@ -144,11 +179,13 @@ int main(int argc, char **argv) {
 	input = argv[2];
 
 	*tokenizer = *TKCreate(delim, input);
+	
+	while (strlen(tokenizer->tokStr) != 0) {	
+		nextToken = TKGetNextToken(tokenizer);
 
-	nextToken = TKGetNextToken(tokenizer);	 
-
-	printf("FIRST %s\n", tokenizer->sep);
-	printf("SECOND %s\n", tokenizer->tokStr);	
-
+		if (nextToken != 0) {
+			printf("%s\n", nextToken);
+		}
+	};
   return 0;
 }
